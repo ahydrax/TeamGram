@@ -22,8 +22,7 @@ namespace TeamGram.Handlers
 
         public async Task Handle(CredentialsAsked notification, CancellationToken cancellationToken)
         {
-            var responseText = @$"
-host: {_teamspeakConfiguration.Host}
+            var responseText = @$"host: {_teamspeakConfiguration.Host}
 password: {_teamspeakConfiguration.Password}";
 
             await _mediator.Publish(new NewTextMessage(responseText));

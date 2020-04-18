@@ -64,7 +64,7 @@ namespace TeamGram.Teamspeak
             return users
                 .Where(x => x.Type == ClientType.FullClient)
                 .Select(x => x.NickName)
-                .OrderByDescending(x => x)
+                .OrderBy(x => x)
                 .ToArray();
         }
 

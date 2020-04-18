@@ -100,7 +100,7 @@ namespace TeamGram.Telegram
             var chatId = new ChatId(_telegramConfiguration.HostGroupId);
 
             var formattedText = text.Contains("\r\n")
-                ? $"```{text}```"
+                ? $"```\r\n{text}```"
                 : $"`{text}`";
 
             await _telegramBotClient.SendTextMessageAsync(chatId, formattedText, ParseMode.Markdown, disableNotification: true,
