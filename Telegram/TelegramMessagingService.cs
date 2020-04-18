@@ -86,7 +86,7 @@ namespace TeamGram.Telegram
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            _telegramBotClient.StartReceiving(cancellationToken: cancellationToken);
+            _telegramBotClient.StartReceiving(new[] { UpdateType.Message }, cancellationToken: cancellationToken);
             _logger.LogInformation("Telegram message receiving started");
             return Task.CompletedTask;
         }

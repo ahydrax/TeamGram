@@ -8,10 +8,10 @@ namespace TeamGram.Handlers
 {
     public class RestartHandler : INotificationHandler<RestartRequested>
     {
-        public Task Handle(RestartRequested notification, CancellationToken cancellationToken)
+        public async Task Handle(RestartRequested notification, CancellationToken cancellationToken)
         {
+            await Task.Delay(5, cancellationToken);
             Environment.FailFast("Initiated by telegram");
-            return Task.CompletedTask;
         }
     }
 }
