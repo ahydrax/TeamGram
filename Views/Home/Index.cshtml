@@ -1,8 +1,19 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "TeamGram";
 }
+@model string[]
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div>
+    <ul class="list-rectangle">
+        @foreach (var username in Model)
+        {
+            <li class="list-group-item">@username</li>
+        }
+    </ul>
 </div>
+
+<script defer>
+    setTimeout(function(){
+       window.location.reload(1);
+    }, 5000);
+</script>

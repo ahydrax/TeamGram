@@ -1,5 +1,4 @@
-﻿using System;
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
@@ -7,14 +6,14 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MihaZupan;
 using TeamGram.Configuration;
-using TeamGram.Services.Telegram.Events;
 using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
-namespace TeamGram.Services.Telegram
+namespace TeamGram.Telegram
 {
-    public class TelegramMessagingService : ITelegramMessageSender, IHostedService, IDisposable
+    public class TelegramMessagingService : ITelegramMessageSender, IHostedService
     {
         private readonly TelegramConfiguration _telegramConfiguration;
         private readonly IMediator _mediator;
@@ -52,20 +51,28 @@ namespace TeamGram.Services.Telegram
         private void ProcessMessage(object? sender, MessageEventArgs e)
         {
             var message = e.Message;
+            var messageText = message.Text;
 
             if (message.Chat.Id != _telegramConfiguration.HostGroupId)
             {
-                _logger.LogInformation("Skipping message '{message}' from unknown chat {chatId} ({chatUsername})",
-                    message.Text, message.Chat.Id, message.Chat.Username);
+                _logger.LogInformation("Skipping message {message} from unknown chat {chatId} ({chatUsername})",
+                    messageText, message.Chat.Id, message.Chat.Username);
                 return;
             }
 
-            var messageText = message.Text;
+            _logger.LogInformation("Incoming message {message} from host chat", messageText);
 
-            switch (messageText)
+            var botHighlightPart = $"@{_telegramConfiguration.BotUsername}";
+            var commandText = messageText.Replace(botHighlightPart, string.Empty);
+
+            switch (commandText)
             {
-                case "/whots":
-                    _mediator.Publish(new WhoTsAsked());
+                case "/users":
+                    _mediator.Publish(new UserListAsked());
+                    break;
+
+                case "/credentials":
+                    _mediator.Publish(new CredentialsAsked());
                     break;
             }
         }
@@ -76,31 +83,28 @@ namespace TeamGram.Services.Telegram
         public Task StartAsync(CancellationToken cancellationToken)
         {
             _telegramBotClient.StartReceiving(cancellationToken: cancellationToken);
+            _logger.LogInformation("Telegram message receiving started");
             return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
             _telegramBotClient.StopReceiving();
+            _logger.LogInformation("Telegram message receiving stopped");
+            _telegramHttpClient.Dispose();
             return Task.CompletedTask;
         }
 
-        public void Dispose()
-        {
-            if (_telegramBotClient.IsReceiving)
-            {
-                _telegramBotClient.StopReceiving();
-            }
-
-            _telegramHttpClient.Dispose();
-        }
-
-        public async Task SendMessage(string text)
+        public async Task SendMessage(string text, CancellationToken cancellationToken = default)
         {
             var chatId = new ChatId(_telegramConfiguration.HostGroupId);
-            var formattedText = string.Concat("```", text, "```");
 
-            await _telegramBotClient.SendTextMessageAsync(chatId, formattedText, disableNotification: true);
+            var formattedText = text.Contains("\r\n")
+                ? $"```{text}```"
+                : $"`{text}`";
+
+            await _telegramBotClient.SendTextMessageAsync(chatId, formattedText, ParseMode.Markdown, disableNotification: true,
+                cancellationToken: cancellationToken);
         }
     }
 }
