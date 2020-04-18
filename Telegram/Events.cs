@@ -15,4 +15,6 @@ namespace TeamGram.Telegram
             MessageText = messageText;
         }
     }
+
+    public class RestartRequested : INotification { }
 }

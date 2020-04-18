@@ -67,6 +67,10 @@ namespace TeamGram.Telegram
 
             switch (commandText)
             {
+                case "/restart":
+                    _mediator.Publish(new RestartRequested());
+                    break;
+
                 case "/users":
                     _mediator.Publish(new UserListAsked());
                     break;
