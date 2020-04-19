@@ -14,17 +14,10 @@ namespace TeamGram.Phrases
     public class UserGreetingPhrase : CustomPhrase
     {
         [BsonElement("username")]
-        public string Username { get; private set; }
+        public string? Username { get; set; }
 
         [BsonElement("template")]
-        public string Template { get; private set; }
-
-        [BsonConstructor]
-        public UserGreetingPhrase(string username, string template)
-        {
-            Username = username;
-            Template = template;
-        }
+        public string? Template { get; set; }
     }
 
     [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
@@ -32,17 +25,10 @@ namespace TeamGram.Phrases
     public class UserFarewellPhrase : CustomPhrase
     {
         [BsonElement("username")]
-        public string Username { get; private set; }
+        public string? Username { get; set; }
 
         [BsonElement("template")]
-        public string Template { get; private set; }
-
-        [BsonConstructor]
-        public UserFarewellPhrase(string username, string template)
-        {
-            Username = username;
-            Template = template;
-        }
+        public string? Template { get; set; }
     }
 
     [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
@@ -50,12 +36,6 @@ namespace TeamGram.Phrases
     public class ServerIsEmptyPhrase : CustomPhrase
     {
         [BsonElement("text")]
-        public string Text { get; private set; }
-
-        [BsonConstructor]
-        public ServerIsEmptyPhrase(string text)
-        {
-            Text = text;
-        }
+        public string? Text { get; set; }
     }
 }
