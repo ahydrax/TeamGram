@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MongoDB.Driver;
 using TeamGram.Configuration;
+using TeamGram.Phrases;
 using TeamGram.Teamspeak;
 using TeamGram.Telegram;
 
@@ -30,6 +32,22 @@ namespace TeamGram
             services.AddMediatR(typeof(Program).Assembly);
             services.AddSingleton(ApplicationConfiguration.Teamspeak);
             services.AddSingleton(ApplicationConfiguration.Telegram);
+            services.AddSingleton(ApplicationConfiguration.Mongo);
+            services.AddSingleton<IMongoClient>(x =>
+            {
+                var options = x.GetRequiredService<MongoConfiguration>();
+                var mongoUrl = new MongoUrl(options.Uri);
+                return new MongoClient(mongoUrl);
+            });
+            services.AddSingleton<IMongoDatabase>(x =>
+            {
+                var options = x.GetRequiredService<MongoConfiguration>();
+                var mongoUrl = new MongoUrl(options.Uri);
+                var client = x.GetRequiredService<IMongoClient>();
+                return client.GetDatabase(mongoUrl.DatabaseName);
+            });
+
+            services.AddSingleton<PhrasesProvider>();
 
             services.AddSingleton<TelegramMessagingService>();
             services.AddSingleton<IHostedService>(x => x.GetRequiredService<TelegramMessagingService>());
