@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
 using TeamGram.Configuration;
+using TeamGram.Logging;
 using TeamGram.Phrases;
 using TeamGram.Teamspeak;
 using TeamGram.Telegram;
@@ -29,7 +30,7 @@ namespace TeamGram
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllersWithViews();
-            services.AddMediatR(typeof(Program).Assembly);
+            services.AddMediatR(x => { x.Using<LoggingMediator>(); }, typeof(Program).Assembly);
             services.AddSingleton(ApplicationConfiguration.Teamspeak);
             services.AddSingleton(ApplicationConfiguration.Telegram);
             services.AddSingleton(ApplicationConfiguration.Mongo);
