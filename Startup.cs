@@ -42,9 +42,8 @@ namespace TeamGram
             services.AddSingleton<IMongoDatabase>(x =>
             {
                 var options = x.GetRequiredService<MongoConfiguration>();
-                var mongoUrl = new MongoUrl(options.Uri);
                 var client = x.GetRequiredService<IMongoClient>();
-                return client.GetDatabase(mongoUrl.DatabaseName);
+                return client.GetDatabase(options.Database);
             });
 
             services.AddSingleton<PhrasesProvider>();
