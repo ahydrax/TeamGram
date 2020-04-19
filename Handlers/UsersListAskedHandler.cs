@@ -18,11 +18,13 @@ namespace TeamGram.Handlers
             _teamspeakUsersProvider = teamspeakUsersProvider;
             _mediator = mediator;
         }
-        
+
         public async Task Handle(UserListAsked notification, CancellationToken cancellationToken)
         {
             var users = await _teamspeakUsersProvider.GetUsers(cancellationToken);
-            var text = string.Join("\r\n", users);
+            var text = users.Length == 0
+                ? "there are no clients connected"
+                : string.Join("\r\n", users);
             await _mediator.Publish(new NewTextMessage(text), cancellationToken);
         }
     }

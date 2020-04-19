@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -19,6 +20,8 @@ namespace TeamGram.Teamspeak
         private readonly ILogger<TeamspeakLiveService> _logger;
         private readonly TeamSpeakClient _teamspeakClient;
         private readonly ConcurrentDictionary<int, string> _usernameCache;
+        private Task? _keepAliveTask;
+        private CancellationTokenSource? _keepAliveCancellationTokenSource;
 
         public TeamspeakLiveService(TeamspeakConfiguration teamspeakConfiguration,
             IMediator mediator,
@@ -55,6 +58,12 @@ namespace TeamGram.Teamspeak
             _teamspeakClient.Subscribe<ClientEnterView>(UserJoined);
             _teamspeakClient.Subscribe<ClientLeftView>(UserLeft);
             _logger.LogInformation("Subscribed to notifications");
+
+            _keepAliveCancellationTokenSource = new CancellationTokenSource();
+            _keepAliveTask = Task.Factory.StartNew(
+                _ => KeepAlive(_keepAliveCancellationTokenSource.Token),
+                cancellationToken,
+                TaskCreationOptions.LongRunning);
         }
 
         public async Task<string[]> GetUsers(CancellationToken cancellationToken = default)
@@ -90,14 +99,37 @@ namespace TeamGram.Teamspeak
             }
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        private async Task KeepAlive(CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromMinutes(1), cancellationToken);
+                await _teamspeakClient.WhoAmI();
+                _logger.LogInformation("Keep alive sent");
+            }
+        }
+
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Client disposal initiated");
+
+            if (_keepAliveTask != null && _keepAliveCancellationTokenSource != null)
+            {
+                _keepAliveCancellationTokenSource.Cancel();
+                try
+                {
+                    await _keepAliveTask;
+                }
+                catch (TaskCanceledException)
+                {
+                    _logger.LogInformation("Keep alive stopped");
+                }
+            }
+
             _teamspeakClient.Unsubscribe<ClientEnterView>();
             _teamspeakClient.Unsubscribe<ClientLeftView>();
             _teamspeakClient.Dispose();
             _logger.LogInformation("Client disposed");
-            return Task.CompletedTask;
         }
     }
 }
