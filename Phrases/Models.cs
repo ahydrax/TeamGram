@@ -19,6 +19,8 @@ namespace TeamGram.Phrases
         [BsonElement("template")]
         public string Template { get; private set; }
 
+        private UserGreetingPhrase() { }
+
         public UserGreetingPhrase(string username, string template)
         {
             Username = username;
@@ -36,6 +38,8 @@ namespace TeamGram.Phrases
         [BsonElement("template")]
         public string Template { get; private set; }
 
+        private UserFarewellPhrase() { }
+
         public UserFarewellPhrase(string username, string template)
         {
             Username = username;
@@ -49,6 +53,8 @@ namespace TeamGram.Phrases
     {
         [BsonElement("text")]
         public string Text { get; private set; }
+
+        private ServerIsEmptyPhrase() { }
 
         public ServerIsEmptyPhrase(string text)
         {
