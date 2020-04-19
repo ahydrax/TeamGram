@@ -4,6 +4,7 @@ using MongoDB.Bson.Serialization.Attributes;
 namespace TeamGram.Phrases
 {
     [BsonDiscriminator(Required = true)]
+    [BsonIgnoreExtraElements(true, Inherited = true)]
     [BsonKnownTypes(typeof(UserGreetingPhrase))]
     [BsonKnownTypes(typeof(UserFarewellPhrase))]
     [BsonKnownTypes(typeof(ServerIsEmptyPhrase))]
