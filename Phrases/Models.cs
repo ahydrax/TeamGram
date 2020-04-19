@@ -1,20 +1,23 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
+﻿using JetBrains.Annotations;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace TeamGram.Phrases
 {
-    [BsonDiscriminator("type", Required = true)]
+    [BsonDiscriminator(Required = true)]
     [BsonKnownTypes(typeof(UserGreetingPhrase))]
     [BsonKnownTypes(typeof(UserFarewellPhrase))]
     [BsonKnownTypes(typeof(ServerIsEmptyPhrase))]
     public abstract class CustomPhrase { }
 
+    [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
+    [BsonDiscriminator("greeting")]
     public class UserGreetingPhrase : CustomPhrase
     {
         [BsonElement("username")]
-        public string Username { get; }
+        public string Username { get; private set; }
 
         [BsonElement("template")]
-        public string Template { get; }
+        public string Template { get; private set; }
 
         public UserGreetingPhrase(string username, string template)
         {
@@ -23,13 +26,15 @@ namespace TeamGram.Phrases
         }
     }
 
+    [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
+    [BsonDiscriminator("farewell")]
     public class UserFarewellPhrase : CustomPhrase
     {
         [BsonElement("username")]
-        public string Username { get; }
+        public string Username { get; private set; }
 
         [BsonElement("template")]
-        public string Template { get; }
+        public string Template { get; private set; }
 
         public UserFarewellPhrase(string username, string template)
         {
@@ -38,10 +43,12 @@ namespace TeamGram.Phrases
         }
     }
 
+    [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
+    [BsonDiscriminator("emptyserver")]
     public class ServerIsEmptyPhrase : CustomPhrase
     {
         [BsonElement("text")]
-        public string Text { get; }
+        public string Text { get; private set; }
 
         public ServerIsEmptyPhrase(string text)
         {
