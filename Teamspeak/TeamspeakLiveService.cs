@@ -83,6 +83,7 @@ namespace TeamGram.Teamspeak
             {
                 var username = clientEnterView.NickName;
                 _logger.LogInformation("User joined {username}", username);
+                _usernameCache.TryAdd(clientEnterView.Id, username);
                 _mediator.Publish(new UserJoined(username));
             }
         }
