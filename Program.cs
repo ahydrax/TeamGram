@@ -40,7 +40,7 @@ namespace TeamGram
                                 .MinimumLevel.Information()
                                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                                 .MinimumLevel.Override("System", LogEventLevel.Warning)
-                                .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri(esConfig.Uri))
+                                .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri(esConfig!.Uri!))
                                 {
                                     AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.ESv7,
                                     AutoRegisterTemplate = true,

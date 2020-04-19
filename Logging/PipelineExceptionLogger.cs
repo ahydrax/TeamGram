@@ -2,13 +2,14 @@
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using MediatR.Pipeline;
+using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace TeamGram.Logging
 {
     [UsedImplicitly(ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature)]
-    public class PipelineExceptionLogger<TRequest, TResponse> : IRequestExceptionHandler<TRequest, TResponse>
+    public class PipelineExceptionLogger<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+        where TRequest : IRequest<TResponse>
     {
         private readonly ILogger<TRequest> _logger;
 
@@ -17,11 +18,20 @@ namespace TeamGram.Logging
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public Task Handle(TRequest request, Exception exception, RequestExceptionHandlerState<TResponse> state,
-            CancellationToken cancellationToken)
+        public async Task<TResponse> Handle(
+            TRequest request,
+            CancellationToken cancellationToken,
+            RequestHandlerDelegate<TResponse> next)
         {
-            _logger.LogError(exception, "Error occured during processing", request);
-            return Task.CompletedTask;
+            try
+            {
+                return await next();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error occured during processing", request);
+                throw;
+            }
         }
     }
 }
