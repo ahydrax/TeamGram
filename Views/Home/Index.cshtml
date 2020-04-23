@@ -3,13 +3,19 @@
 }
 @model string[]
 
-<div>
-    <ul class="list-rectangle">
+<div class="ui main text container">
+    <h1 class="ui header">Users on server</h1>
+    <div class="ui middle aligned selection list">
         @foreach (var username in Model)
         {
-            <li class="list-group-item">@username</li>
+            <div class="item">
+                <i class="user outline icon"></i>
+                <div class="content">
+                    <div class="header">@username</div>
+                </div>
+            </div>
         }
-    </ul>
+    </div>
 </div>
 
 <script defer>

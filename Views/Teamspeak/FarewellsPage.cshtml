@@ -1,0 +1,68 @@
+﻿@model IReadOnlyCollection<TeamGram.Phrases.UserFarewellPhrase>
+
+<div class="ui container">
+    <h2>Teamspeak messages management</h2>
+
+    <table class="ui celled table">
+        <thead>
+        <tr>
+            <th class="thauto">Username</th>
+            <th>Template</th>
+            <th class="thauto">
+                <button class="ui inverted green icon button" type="submit" onclick="openModal()">
+                    <i class="plus circle icon"></i>
+                </button>
+            </th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var farewellPhrase in Model)
+        {
+            <tr>
+                <td>@farewellPhrase.Username</td>
+                <td>@farewellPhrase.Template</td>
+                <td>
+                    <form action="/teamspeak/phrase/@farewellPhrase.Id/delete" method="post">
+                        <input type="hidden" name="pageUrl" value="@Url.Action("FarewellsPage")"/>
+                        <button class="ui inverted red icon button" type="submit" width="">
+                            <i class="minus circle icon"></i>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<form asp-action="AddFarewell" method="post" class="ui modal">
+    <i class="close icon"></i>
+    <div class="header">
+        Add new farewell
+    </div>
+    <div class="content">
+        <div class="ui form">
+            <div class="field">
+                <label>Username</label>
+                <input type="text" name="username" placeholder="Username" required>
+            </div>
+            <div class="field">
+                <label>Template</label>
+                <input type="text" name="template" placeholder="Template" required>
+            </div>
+        </div>
+    </div>
+    <div class="actions">
+        <button class="ui red negative button">Cancel</button>
+        <button class="ui green button" type="submit">Submit</button>
+    </div>
+</form>
+
+<script>
+function openModal()
+{
+    $('.ui.modal')
+      .modal('show')
+    ;
+}
+</script>

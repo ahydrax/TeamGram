@@ -1,29 +1,13 @@
-﻿.list-rectangle {
-    list-style: none;
-    margin: 2rem 2rem;
-    padding: 0;
+﻿.main {
+    margin-top: 7em !important;
 }
 
-.list-rectangle > li {
-    position: relative;
-    display: block;
-    margin-bottom: .25rem;
-    padding: .325rem .825rem .325rem 1.325rem;
-    color: #fff;
-    font-size: 3rem;
-    background: #0AA;
+.logo {
+    width: auto !important;
+    height: 2.5em;
 }
 
-.list-rectangle > li:last-child {
-    margin-bottom: 0;
-}
-
-.list-rectangle > li::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 1rem;
-    background: #ec407a;
+.thauto {
+    white-space: nowrap;
+    width: 1%;
 }

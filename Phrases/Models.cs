@@ -1,5 +1,7 @@
 ﻿using JetBrains.Annotations;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.Serialization.IdGenerators;
 
 namespace TeamGram.Phrases
 {
@@ -8,7 +10,17 @@ namespace TeamGram.Phrases
     [BsonKnownTypes(typeof(UserGreetingPhrase))]
     [BsonKnownTypes(typeof(UserFarewellPhrase))]
     [BsonKnownTypes(typeof(ServerIsEmptyPhrase))]
-    public abstract class CustomPhrase { }
+    public abstract class CustomPhrase
+    {
+        [BsonRepresentation(BsonType.ObjectId)]
+        [BsonId(IdGenerator = typeof(StringObjectIdGenerator))]
+        public string Id { get; private set; }
+
+        protected CustomPhrase(string id)
+        {
+            Id = id;
+        }
+    }
 
     [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
     [BsonDiscriminator("greeting")]
@@ -21,7 +33,7 @@ namespace TeamGram.Phrases
         public string Template { get; private set; }
 
         [BsonConstructor]
-        public UserGreetingPhrase(string username, string template)
+        public UserGreetingPhrase(string id, string username, string template) : base(id)
         {
             Username = username;
             Template = template;
@@ -39,7 +51,7 @@ namespace TeamGram.Phrases
         public string Template { get; private set; }
 
         [BsonConstructor]
-        public UserFarewellPhrase(string username, string template)
+        public UserFarewellPhrase(string id, string username, string template) : base(id)
         {
             Username = username;
             Template = template;
@@ -54,7 +66,7 @@ namespace TeamGram.Phrases
         public string Text { get; private set; }
 
         [BsonConstructor]
-        public ServerIsEmptyPhrase(string text)
+        public ServerIsEmptyPhrase(string id, string text) : base(id)
         {
             Text = text;
         }

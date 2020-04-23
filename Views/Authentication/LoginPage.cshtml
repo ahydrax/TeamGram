@@ -1,0 +1,17 @@
+﻿@model object
+
+<div class="ui text container">
+    <div class="ui inverted segment">
+        <form class="ui inverted form" asp-action="Login" method="post" asp-antiforgery="true">
+            <div class="field">
+                <label>Username</label>
+                <input type="text" name="first-name" placeholder="Username">
+            </div>
+            <div class="field">
+                <label>Password</label>
+                <input type="password" name="last-name" placeholder="Password">
+            </div>
+            <button class="ui inverted green button" type="submit">Log in</button>
+        </form>
+    </div>
+</div>

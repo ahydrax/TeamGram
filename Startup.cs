@@ -1,5 +1,6 @@
 using JetBrains.Annotations;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -29,6 +30,12 @@ namespace TeamGram
         [UsedImplicitly]
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(options =>
+                {
+                    options.LoginPath = "/login";
+                    options.LogoutPath = "/logout";
+                });
             services.AddControllersWithViews();
             services.AddMediatR(x => { x.Using<LoggingMediator>(); }, typeof(Program).Assembly);
             services.AddSingleton(ApplicationConfiguration.Teamspeak);
@@ -63,6 +70,8 @@ namespace TeamGram
         {
             app.UseStaticFiles();
             app.UseRouting();
+            app.UseAuthentication();
+            app.UseAuthorization();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute(

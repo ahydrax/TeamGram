@@ -81,6 +81,8 @@ namespace TeamGram.Teamspeak
         {
             foreach (var clientEnterView in view)
             {
+                if (clientEnterView.Type != ClientType.FullClient) continue;
+
                 var username = clientEnterView.NickName;
                 _logger.LogInformation("User joined {username}", username);
                 _usernameCache.TryAdd(clientEnterView.Id, username);
