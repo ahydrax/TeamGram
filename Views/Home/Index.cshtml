@@ -1,20 +1,47 @@
-﻿@{
-    ViewData["Title"] = "TeamGram";
-}
-@model string[]
+﻿@model TeamGram.Teamspeak.ServerDetailedInfo
 
 <div class="ui main text container">
     <h1 class="ui header">Users on server</h1>
-    <div class="ui middle aligned selection list">
-        @foreach (var username in Model)
+    <div class="ui list">
+        @foreach (var (serverName, clientList) in Model.GetChannelsWithUsers())
         {
             <div class="item">
-                <i class="user outline icon"></i>
+                <i class="users icon"></i>
                 <div class="content">
-                    <div class="header">@username</div>
+                    <div class="header">@serverName</div>
+                    <div class="list">
+                        @foreach (var clientInfo in clientList)
+                        {
+                            <div class="item">
+                                <i class="user icon"></i>
+                                <div class="content">
+                                    <div class="header">@clientInfo.Username</div>
+                                    <div class="description">@clientInfo.IpAddress</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         }
+        <div class="item">
+            <i class="microchip icon"></i>
+            <div class="content">
+                <div class="header">Bots</div>
+                <div class="list">
+                    @foreach (var clientInfo in Model.GetBots())
+                    {
+                        <div class="item">
+                            <i class="bug icon"></i>
+                            <div class="content">
+                                <div class="header">@clientInfo.Username</div>
+                                <div class="description">@clientInfo.IpAddress</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 

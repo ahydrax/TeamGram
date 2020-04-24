@@ -19,7 +19,7 @@ namespace TeamGram.Controllers
 
         public async Task<IActionResult> Index(CancellationToken cancellationToken)
         {
-            var users = await _teamspeakUsersProvider.GetUsers(cancellationToken);
+            var users = await _teamspeakUsersProvider.GetDetailedInfo(cancellationToken);
             return View(users);
         }
     }

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using TeamGram.Configuration;
 using TeamSpeak3QueryApi.Net.Specialized;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
+using TeamSpeak3QueryApi.Net.Specialized.Responses;
 
 namespace TeamGram.Teamspeak
 {
@@ -18,10 +19,11 @@ namespace TeamGram.Teamspeak
         private readonly TeamspeakConfiguration _teamspeakConfiguration;
         private readonly IMediator _mediator;
         private readonly ILogger<TeamspeakLiveService> _logger;
-        private readonly TeamSpeakClient _teamspeakClient;
         private readonly ConcurrentDictionary<int, string> _usernameCache;
         private Task? _keepAliveTask;
         private CancellationTokenSource? _keepAliveCancellationTokenSource;
+        private readonly TeamSpeakClient _teamspeakClient;
+        private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
 
         public TeamspeakLiveService(TeamspeakConfiguration teamspeakConfiguration,
             IMediator mediator,
@@ -35,47 +37,94 @@ namespace TeamGram.Teamspeak
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
-        {
-            _logger.LogInformation("Starting teamspeak client...");
-            await _teamspeakClient.Connect();
-            await _teamspeakClient.Login(_teamspeakConfiguration.Username, _teamspeakConfiguration.Key);
-            _logger.LogInformation("Teamspeak bot connected");
-
-            await _teamspeakClient.UseServer(1);
-            _logger.LogInformation("Server changed");
-
-            var me = await _teamspeakClient.WhoAmI();
-            _logger.LogInformation($"Connected using username {me.NickName}");
-
-            var users = await _teamspeakClient.GetClients();
-            foreach (var clientInfo in users)
+            => await DoWithClientLock(async client =>
             {
-                _usernameCache.TryAdd(clientInfo.Id, clientInfo.NickName);
-            }
+                _logger.LogInformation("Starting teamspeak client...");
+                await client.Connect();
+                await client.Login(_teamspeakConfiguration.Username, _teamspeakConfiguration.Key);
+                _logger.LogInformation("Teamspeak bot connected");
 
-            await _teamspeakClient.RegisterServerNotification();
+                await client.UseServer(1);
+                _logger.LogInformation("Server changed");
 
-            _teamspeakClient.Subscribe<ClientEnterView>(UserJoined);
-            _teamspeakClient.Subscribe<ClientLeftView>(UserLeft);
-            _logger.LogInformation("Subscribed to notifications");
+                var me = await client.WhoAmI();
+                _logger.LogInformation($"Connected using username {me.NickName}");
 
-            _keepAliveCancellationTokenSource = new CancellationTokenSource();
-            _keepAliveTask = Task.Factory.StartNew(
-                _ => KeepAlive(_keepAliveCancellationTokenSource.Token),
-                cancellationToken,
-                TaskCreationOptions.LongRunning);
-        }
+                var users = await client.GetClients();
+                foreach (var clientInfo in users)
+                {
+                    _usernameCache.TryAdd(clientInfo.Id, clientInfo.NickName);
+                }
+
+                await client.RegisterServerNotification();
+
+                client.Subscribe<ClientEnterView>(UserJoined);
+                client.Subscribe<ClientLeftView>(UserLeft);
+                _logger.LogInformation("Subscribed to notifications");
+
+                _keepAliveCancellationTokenSource = new CancellationTokenSource();
+                _keepAliveTask = Task.Factory.StartNew(
+                    _ => KeepAlive(_keepAliveCancellationTokenSource.Token),
+                    cancellationToken,
+                    TaskCreationOptions.LongRunning);
+            }, cancellationToken);
 
         public async Task<string[]> GetUsers(CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var users = await _teamspeakClient.GetClients();
-            return users
-                .Where(x => x.Type == ClientType.FullClient)
-                .Select(x => x.NickName)
-                .OrderBy(x => x)
-                .ToArray();
-        }
+            => await DoWithClientLock(async client =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var users = await client.GetClients();
+                return users
+                    .Where(x => x.Type == ClientType.FullClient)
+                    .Select(x => x.NickName)
+                    .OrderBy(x => x)
+                    .ToArray();
+            }, cancellationToken);
+
+        public async Task<ServerDetailedInfo> GetDetailedInfo(CancellationToken cancellationToken = default)
+            => await DoWithClientLock(async client =>
+            {
+                var clients = await client.GetClients();
+
+                var clientInfos = new List<GetClientDetailedInfo>();
+                foreach (var clientInfo in clients)
+                {
+                    var clientDetailedInfo = await client.GetClientInfo(clientInfo.Id);
+                    clientInfos.Add(clientDetailedInfo);
+                }
+
+                var queryApiBots = clientInfos
+                    .Where(clientInfo => clientInfo.Type == ClientType.Query)
+                    .Select(clientInfo => new UserDetailedInfo
+                    {
+                        Username = clientInfo.NickName,
+                        IpAddress = clientInfo.ConnectionIp
+                    })
+                    .ToArray();
+
+                var channels = await client.GetChannels();
+
+                var result = channels.Select(channelInfo =>
+                    {
+                        var channelClients = clientInfos
+                            .Where(clientInfo => clientInfo.ChannelId == channelInfo.Id)
+                            .Where(clientInfo => clientInfo.Type == ClientType.FullClient)
+                            .Select(clientInfo => new UserDetailedInfo
+                            {
+                                Username = clientInfo.NickName,
+                                IpAddress = clientInfo.ConnectionIp
+                            })
+                            .ToArray();
+                        return (channelInfo.Name, channelClients);
+                    })
+                    .Append((ServerDetailedInfo.QUERY_API_BOTS_GROUPNAME, queryApiBots))
+                    .ToArray();
+
+                return new ServerDetailedInfo
+                {
+                    AllUsersAndBotsOnChannels = result.ToDictionary(x => x.Item1, x => x.Item2)
+                };
+            }, cancellationToken);
 
         private void UserJoined(IReadOnlyCollection<ClientEnterView> view)
         {
@@ -107,32 +156,63 @@ namespace TeamGram.Teamspeak
             while (!cancellationToken.IsCancellationRequested)
             {
                 await Task.Delay(TimeSpan.FromMinutes(1), cancellationToken);
-                await _teamspeakClient.WhoAmI();
+                await DoWithClientLock(async client => { await client.WhoAmI(); }, cancellationToken);
                 _logger.LogInformation("Keep alive sent");
             }
         }
 
-        public async Task StopAsync(CancellationToken cancellationToken)
+        private async Task DoWithClientLock(
+            Func<TeamSpeakClient, Task> action,
+            CancellationToken cancellationToken = default)
         {
-            _logger.LogInformation("Client disposal initiated");
-
-            if (_keepAliveTask != null && _keepAliveCancellationTokenSource != null)
+            await _semaphoreSlim.WaitAsync(cancellationToken);
+            try
             {
-                _keepAliveCancellationTokenSource.Cancel();
-                try
-                {
-                    await _keepAliveTask;
-                }
-                catch (TaskCanceledException)
-                {
-                    _logger.LogInformation("Keep alive stopped");
-                }
+                await action(_teamspeakClient);
             }
-
-            _teamspeakClient.Unsubscribe<ClientEnterView>();
-            _teamspeakClient.Unsubscribe<ClientLeftView>();
-            _teamspeakClient.Dispose();
-            _logger.LogInformation("Client disposed");
+            finally
+            {
+                _semaphoreSlim.Release();
+            }
         }
+
+        private async Task<T> DoWithClientLock<T>(
+            Func<TeamSpeakClient, Task<T>> action,
+            CancellationToken cancellationToken = default)
+        {
+            await _semaphoreSlim.WaitAsync(cancellationToken);
+            try
+            {
+                return await action(_teamspeakClient);
+            }
+            finally
+            {
+                _semaphoreSlim.Release();
+            }
+        }
+
+        public async Task StopAsync(CancellationToken cancellationToken)
+            => await DoWithClientLock(async client =>
+            {
+                _logger.LogInformation("Client disposal initiated");
+
+                if (_keepAliveTask != null && _keepAliveCancellationTokenSource != null)
+                {
+                    _keepAliveCancellationTokenSource.Cancel();
+                    try
+                    {
+                        await _keepAliveTask;
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        _logger.LogInformation("Keep alive stopped");
+                    }
+                }
+
+                client.Unsubscribe<ClientEnterView>();
+                client.Unsubscribe<ClientLeftView>();
+                client.Dispose();
+                _logger.LogInformation("Client disposed");
+            }, cancellationToken);
     }
 }
