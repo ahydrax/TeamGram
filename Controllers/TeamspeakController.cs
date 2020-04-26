@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
@@ -21,9 +22,9 @@ namespace TeamGram.Controllers
         }
 
         [HttpGet("users")]
-        public async Task<string[]> GetUsers()
+        public async Task<string[]> GetUsers(CancellationToken ct)
         {
-            var users = await _teamspeakUsersProvider.GetUsers();
+            var users = await _teamspeakUsersProvider.GetUsers(ct);
             return users;
         }
 
