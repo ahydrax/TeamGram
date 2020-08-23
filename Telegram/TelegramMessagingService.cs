@@ -21,13 +21,22 @@ namespace TeamGram.Telegram
         private readonly TelegramBotClient _telegramBotClient;
         private readonly HttpClient _telegramHttpClient;
 
-        public TelegramMessagingService(TelegramConfiguration telegramConfiguration,
+        public TelegramMessagingService(
+            TelegramConfiguration telegramConfiguration,
             IMediator mediator,
             ILogger<TelegramMessagingService> logger)
         {
             _telegramConfiguration = telegramConfiguration;
             _mediator = mediator;
             _logger = logger;
+
+            if (telegramConfiguration.Socks5Host == null)
+            {
+                _telegramBotClient = new TelegramBotClient(telegramConfiguration.BotApiKey);
+                _telegramBotClient.OnMessage += ProcessMessage;
+                _telegramBotClient.OnReceiveGeneralError += LogGeneralError;
+                return;
+            }
 
             var proxy = new HttpToSocks5Proxy(
                 telegramConfiguration.Socks5Host,
@@ -95,7 +104,7 @@ namespace TeamGram.Telegram
         {
             _telegramBotClient.StopReceiving();
             _logger.LogInformation("Telegram message receiving stopped");
-            _telegramHttpClient.Dispose();
+            _telegramHttpClient?.Dispose();
             return Task.CompletedTask;
         }
 
